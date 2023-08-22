@@ -1,0 +1,87 @@
+{
+    "CREATE": "User Successfully Create",
+    "NOTCREATE": "User not Created",
+    "NOTAUTH": "User can't authorize",
+    
+    "SUCCESS": "User logged in successfully",
+    "NOTSUCCESS": "Couldn't login. Please try again later.",
+   
+   
+    "UPDATE": "User data successfully update.",   
+    
+    "SERVERERROR": "Internal server error",
+    
+
+  
+   
+    "USERLOGOUT":"User successfully logged out",
+    "DELETEERROR":"Error deleting user",
+    "ACTIVEERROR":"Error in deleted not activate",
+    "USERDETAILS":"Username and password are required",
+    
+
+    "CHECKEMAILID": "We check your email address but not found",
+    "NOTSEND": "Couldn't send mail. Please try again later.",
+    "FOUNDDETAILS": "We will send you an email for OTP",
+    "NOTPROCCESS":"Email id not found",
+
+    
+
+
+
+    "TOKEN": "Couldn't create access token. Please try again later",
+    "TOKENCREATE": "Token Successfully Created",
+    "TOKENAUTH":"Authentication failed",
+    "TOKENINVALID": "Invalid Token",
+   
+
+    
+
+
+    "ADMINNOTFOUND": "Admin not Found",
+    "ADMINSUCCESS": "Admin logged in successfully",
+    "ADMINSINGUPERROR":"Already admin registered, So you can't registered new admin",
+
+    "FILDSREQUIRE":"All fields required",
+    "TIMEOUT": "Session time out",
+    
+
+
+
+
+    
+        "CREATED":"User create successfully",
+        "DELETED": "User successfully deleted",
+        "INTERNAL_SERVER_ERROR": "Internal server error",
+        "NOTCREATED":"User not Created",
+        "VALIDATEPASS" :"Password contain only Number, alphanumeric & special characters.",
+        "EMAILEXITS": "Email id alrady exist.",
+        "MOBILEEXITS": "Phone number alrady exist.",
+        "NOTFOUND": "User not Found",
+        "NOTUPDATE":"User details not update",
+        "NOT_MODIFIED":"User not activate",
+        "USERACTIVE":"User activate Successfully",
+        "NOTEMPTY": "Faild required",
+        "FOUNDUSER":"User Details fatch",
+        "NOTMATCH": "Password doesn,t match",
+        "UNAUTHORIZED": "You must verify your account and get activate your account",
+        "SERVICE_UNAVAILABLE": "Could not send email. please try later",
+
+
+
+        "OTPNOTMATCH": "OTP not Verify or not match",
+        "OTPVIRIFY":"Otp verify successfully",
+        "OTPEXPIRED": "Otp expired",
+
+
+        "OLDPASSWORDMATCH": "New password must be different from the old password",
+        "PASSWORDCHANGE": "Password changed Successfully",
+        "PASSWORDMATCH":"New and confirm password not match",
+        "OLDPASSWORD":"Incorrect current password",
+        "PASSNOTCHANGE":"Password not changed",
+
+
+        "LOGOUTERROR":"Error occurred while logging out",
+        "LOGOUT":"Logout Successfully"
+    
+}
