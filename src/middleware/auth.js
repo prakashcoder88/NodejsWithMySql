@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const responseMsg = require("../utils/ResponseMessage.json");
 const { key_Token, adminkey_Token, Token_expiry } = process.env;
 
-const UserValidateToken = (req, res, next) => {
+const StudentValidateToken = (req, res, next) => {
   const token = req.body.token || req.headers["authorization"];
 
   if (!token) {
@@ -36,4 +36,4 @@ const adminauthenticationToken = (req, res, next) => {
 
 const blockTokens = new Set();
 
-module.exports = { UserValidateToken, adminauthenticationToken, blockTokens };
+module.exports = { StudentValidateToken, adminauthenticationToken, blockTokens };

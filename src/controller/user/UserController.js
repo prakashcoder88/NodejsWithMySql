@@ -596,7 +596,7 @@ exports.ResetPassword = async (req, res) => {
   }
 };
 
-exports.UserLogout = (req, res) => {
+exports.StudentLogout = (req, res) => {
   const token = req.headers.authorization;
 
   blockTokens.add(token);
