@@ -3,18 +3,19 @@ require("dotenv").config();
 
 const { USER, PASSWORD, DATABASE } = process.env;
 
-const connection = mysql.createConnection({
+const connection = mysql.createPool({
   host: "localhost",
   user: USER,
   password: PASSWORD,
   database: DATABASE
 });
 
-connection.connect((err) => {
+connection.getConnection((err, conn) => {
   if (err) {
     console.error("Connection failed: " + err.message);
   } else {
     console.log("Successfully connected to the database");
+    conn.release()
   }
 });
 

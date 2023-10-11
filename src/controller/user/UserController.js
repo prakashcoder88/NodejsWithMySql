@@ -1,6 +1,5 @@
 const bcrypt = require("bcrypt");
-// const mysql = require("mysql2")
-// const jwt = require("jsonwebtoken");
+require('mysql')
 require("dotenv").config();
 const { StatusCodes } = require("http-status-codes");
 const responsemessage = require("../../utils/ResponseMessage.json");
@@ -12,26 +11,25 @@ const {
 const sendEmail = require("../../services/EmailService");
 const { generateJwt } = require("../../utils/jwt");
 
-// const connection = require("../../config/Db.config");
+const connection = require("../../config/Db.config");
 const uploadFile = require("../../middleware/FileUpload");
 
 exports.SignUp = async (req, res) => {
-  let { firstName, lastName, email, mobile, password } = req.body;
+  let { StudentName, email, phone, password} = req.body;
 
   try {
-    empid = Math.floor(1000 + Math.random() * 9999);
 
-    userName =
-      (firstName + lastName).toLowerCase() +
-      Math.floor(10 + Math.random() * 100);
 
-    mobile = parseInt(mobile);
+    username =
+      StudentName.toLowerCase() +
+      Math.floor(Math.random().toFixed(2) * 100);
 
-    const checkQuery = "SELECT * FROM empdata WHERE email = ? OR mobile = ?";
 
-    connection.query(checkQuery, [email, mobile], async (error, results) => {
-      let existemail = results.find((empdata) => empdata.email === email);
-      let existmobile = results.find((empdata) => empdata.mobile === mobile);
+    const checkQuery = "SELECT * FROM studentdata WHERE email = ? OR phone = ?";
+
+    connection.query(checkQuery, [email, phone], async (error, results) => {
+      let existemail = results.find((studentdata) => studentdata.email === email);
+      let existmobile = results.find((studentdata) => studentdata.phone === phone);
 
       if (existemail || existmobile) {
         const message = existemail
@@ -42,13 +40,7 @@ exports.SignUp = async (req, res) => {
           status: StatusCodes.BAD_REQUEST,
           message,
         });
-        //   if (results.length > 0) {
-        //     const existingUser = results.find(
-        //       (empdata) => empdata.email === email || empdata.mobile === mobile
-        //     );
-        //     const field = existingUser.email === email ? "email" : "mobile";
-        //     return res.status(400).json({
-        //         message: `${field} already exists` });
+        
       } else {
         if (!validatePassword(password)) {
           return res.status(400).json({
@@ -56,25 +48,21 @@ exports.SignUp = async (req, res) => {
             message: responsemessage.VALIDATEPASS,
           });
         } else {
-          const profile = req.profileUrl || "";
-          const document = JSON.stringify(req.documentUrl) || "";
+
 
           const hashPassword = await passwordencrypt(password);
+ 
           const insertQuery =
-            "INSERT INTO empdata (empid,userName, firstName, lastName, email, mobile, password,profile, document) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO studentdata (StudentName, username, email, phone, password) VALUES (?,?, ?, ?, ?)";
 
           connection.query(
             insertQuery,
             [
-              empid,
-              userName,
-              firstName,
-              lastName,
-              email,
-              mobile,
-              hashPassword,
-              profile,
-              document,
+              StudentName, 
+              username, 
+              email, 
+              phone, 
+              hashPassword
             ],
             (error, insertResults) => {
               if (error) {
@@ -86,6 +74,8 @@ exports.SignUp = async (req, res) => {
                 return res.status(201).json({
                   status: StatusCodes.CREATED,
                   message: responsemessage.CREATED,
+                
+                  
                 });
               }
             }
@@ -106,7 +96,7 @@ exports.SignIn = async (req, res) => {
     const { userName, email, mobile, password } = req.body;
 
     const selectdata =
-      "SELECT * FROM empdata WHERE email = ? OR userName = ? OR mobile = ?";
+      "SELECT * FROM studentdata WHERE email = ? OR userName = ? OR mobile = ?";
     connection.query(
       selectdata,
       [email, userName, mobile],
@@ -175,7 +165,7 @@ exports.UserFind = async (req, res) => {
   try {
     let userId = req.currentUser;
 
-    const selectdata = "SELECT * FROM empdata WHERE id = ?";
+    const selectdata = "SELECT * FROM studentdata WHERE id = ?";
     connection.query(selectdata, [userId], async (error, results) => {
       if (error) {
         return res.status(400).json({
@@ -202,7 +192,7 @@ exports.UserDelete = async (req, res) => {
   try {
     let userId = req.currentUser;
 
-    const selectdata = "SELECT * FROM empdata WHERE id = ?";
+    const selectdata = "SELECT * FROM studentdata WHERE id = ?";
     connection.query(selectdata, [userId], async (error, results) => {
       if (error) {
         return res.status(404).json({
@@ -212,7 +202,7 @@ exports.UserDelete = async (req, res) => {
       } else {
         const user = results[0];
 
-        const updatedata = "UPDATE empdata SET isactive = true WHERE id = ?";
+        const updatedata = "UPDATE studentdata SET isactive = true WHERE id = ?";
         connection.query(updatedata, [userId], (error) => {
           if (error) {
             return res.status(404).json({
@@ -243,7 +233,7 @@ exports.UserUpdate = async (req, res) => {
     console.log(req.body);
     let userId = req.currentUser;
 
-    const selectQuery = "SELECT * FROM empdata WHERE id = ?";
+    const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
 
     connection.query(selectQuery, [userId], async (error, results) => {
       if (error) {
@@ -254,16 +244,16 @@ exports.UserUpdate = async (req, res) => {
       } else {
         const existingUser = results[0];
         const checkQuery =
-          "SELECT * FROM empdata WHERE email = ? OR mobile = ?";
+          "SELECT * FROM studentdata WHERE email = ? OR mobile = ?";
 
         connection.query(
           checkQuery,
           [email, mobile],
           async (error, results) => {
-            let existemail = results.find((empdata) => empdata.email === email);
+            let existemail = results.find((studentdata) => studentdata.email === email);
 
             const existmobile = results.find(
-              (empdata) => empdata.mobile === parseInt(mobile, 10)
+              (studentdata) => studentdata.mobile === parseInt(mobile, 10)
             );
 
             if (existemail || existmobile) {
@@ -306,7 +296,7 @@ exports.UserUpdate = async (req, res) => {
                   message: responsemessage.NOTFOUND,
                 });
               } else {
-                const updateQuery = `UPDATE empdata SET ${updatedatas.join(
+                const updateQuery = `UPDATE studentdata SET ${updatedatas.join(
                   ", "
                 )} WHERE id = ?`;
                 updateValues.push(userId);
@@ -347,7 +337,7 @@ exports.SendOTP = async (req, res) => {
       timeZone: "Asia/Kolkata",
     });
 
-    const userQuery = "SELECT * FROM empdata WHERE email = ?";
+    const userQuery = "SELECT * FROM studentdata WHERE email = ?";
 
     connection.query(userQuery, [email], async (userError, userRows) => {
       // console.log(userRows);
@@ -368,7 +358,7 @@ exports.SendOTP = async (req, res) => {
         const OTP = generateOTP(); // Replace this with your OTP generation logic
 
         const updateUserQuery =
-          "UPDATE empdata SET otp = ?, otpExpire = ? WHERE email = ?";
+          "UPDATE studentdata SET otp = ?, otpExpire = ? WHERE email = ?";
 
         const updateParams = [OTP, expiryIST, email];
 
@@ -420,7 +410,7 @@ exports.ForgotPassword = async (req, res) => {
         message: responsemessage.VALIDATEPASS,
       });
     } else {
-      let selectQuery = "SELECT * FROM empdata WHERE email = ?";
+      let selectQuery = "SELECT * FROM studentdata WHERE email = ?";
       connection.query(selectQuery, [email], async (userError, userRows) => {
         if (userRows.length === 0) {
           return res.status(404).json({
@@ -449,7 +439,7 @@ exports.ForgotPassword = async (req, res) => {
             const passwordHash = await passwordencrypt(newPassword);
 
             connection.query(
-              "UPDATE empdata SET  otp = NULL,otpExpire= NULL,password = ? WHERE email = ?",
+              "UPDATE studentdata SET  otp = NULL,otpExpire= NULL,password = ? WHERE email = ?",
               [passwordHash, email],
               (updateError) => {
                 if (updateError) {
@@ -483,7 +473,7 @@ exports.ResetPassword = async (req, res) => {
   try {
     const { id, oldPassword, newPassword, confirmPassword } = req.body;
 
-    const selectQuery = "SELECT * FROM empdata WHERE id = ?";
+    const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
 
     connection.query(selectQuery, [id], async (error, results) => {
       if (results.length === 0) {
@@ -526,7 +516,7 @@ exports.ResetPassword = async (req, res) => {
             } else {
               const hashedPassword = await passwordencrypt(newPassword);
               const updateQuery =
-                "UPDATE empdata SET password = ? WHERE id = ?";
+                "UPDATE studentdata SET password = ? WHERE id = ?";
               connection.query(
                 updateQuery,
                 [hashedPassword, id],
@@ -562,7 +552,7 @@ exports.UserLogout = (req, res) => {
   const userId = req.currentUser;
 
   connection.query(
-    "SELECT * FROM empdata WHERE id = ?",
+    "SELECT * FROM studentdata WHERE id = ?",
     [userId],
     (error, results) => {
       if (error) {

@@ -15,7 +15,7 @@ async function passwordencrypt(password) {
 function validatePassword(password) {
   const pattern = 
   // /^[^\s]{6,10}$/;
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@#$&%])(?!.*\s).{6,10}$/;
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@#$&%])(?!.*\s).{6,15}$/;
   return pattern.test(password);
 }
 function generateOTP(){
