@@ -7,8 +7,10 @@ const uploadFile = require("../middleware/FileUpload")
 
 router.post("/signup", StudentData.SignUp);
 router.post("/signin", StudentData.SignIn);
-router.get("/viewdata", UserValidateToken,StudentData.UserFind);
-router.delete("/userdelete", UserValidateToken,StudentData.UserDelete);
+router.get("/viewdata", UserValidateToken,StudentData.studentFind);
+router.delete("/delete", UserValidateToken,StudentData.studentDelete);
+router.delete("/softdelete", UserValidateToken,StudentData.studentSoftDelete);
+
 router.patch("/userupdate", UserValidateToken,uploadFile,StudentData.UserUpdate);
 router.post("/forgotpassword", StudentData.ForgotPassword);
 router.post("/sendotp", StudentData.SendOTP);

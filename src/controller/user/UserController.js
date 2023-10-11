@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-require('mysql')
+require("mysql");
 require("dotenv").config();
 const { StatusCodes } = require("http-status-codes");
 const responsemessage = require("../../utils/ResponseMessage.json");
@@ -10,26 +10,28 @@ const {
 } = require("../../services/CommonService");
 const sendEmail = require("../../services/EmailService");
 const { generateJwt } = require("../../utils/jwt");
+const { blockTokens } = require("../../middleware/auth");
 
 const connection = require("../../config/Db.config");
 const uploadFile = require("../../middleware/FileUpload");
 
 exports.SignUp = async (req, res) => {
-  let { StudentName, email, phone, password} = req.body;
+  let { StudentName, email, phone, password } = req.body;
 
   try {
-
-
+    StudentName = StudentName.replace(/\s/g, "");
     username =
-      StudentName.toLowerCase() +
-      Math.floor(Math.random().toFixed(2) * 100);
-
+      StudentName.toLowerCase() + Math.floor(Math.random().toFixed(2) * 100);
 
     const checkQuery = "SELECT * FROM studentdata WHERE email = ? OR phone = ?";
 
     connection.query(checkQuery, [email, phone], async (error, results) => {
-      let existemail = results.find((studentdata) => studentdata.email === email);
-      let existmobile = results.find((studentdata) => studentdata.phone === phone);
+      let existemail = results.find(
+        (studentdata) => studentdata.email === email
+      );
+      let existmobile = results.find(
+        (studentdata) => studentdata.phone === phone
+      );
 
       if (existemail || existmobile) {
         const message = existemail
@@ -40,7 +42,6 @@ exports.SignUp = async (req, res) => {
           status: StatusCodes.BAD_REQUEST,
           message,
         });
-        
       } else {
         if (!validatePassword(password)) {
           return res.status(400).json({
@@ -48,22 +49,14 @@ exports.SignUp = async (req, res) => {
             message: responsemessage.VALIDATEPASS,
           });
         } else {
-
-
           const hashPassword = await passwordencrypt(password);
- 
+
           const insertQuery =
             "INSERT INTO studentdata (StudentName, username, email, phone, password) VALUES (?,?, ?, ?, ?)";
 
           connection.query(
             insertQuery,
-            [
-              StudentName, 
-              username, 
-              email, 
-              phone, 
-              hashPassword
-            ],
+            [StudentName, username, email, phone, hashPassword],
             (error, insertResults) => {
               if (error) {
                 return res.status(400).json({
@@ -74,8 +67,6 @@ exports.SignUp = async (req, res) => {
                 return res.status(201).json({
                   status: StatusCodes.CREATED,
                   message: responsemessage.CREATED,
-                
-                  
                 });
               }
             }
@@ -93,21 +84,20 @@ exports.SignUp = async (req, res) => {
 
 exports.SignIn = async (req, res) => {
   try {
-    const { userName, email, mobile, password } = req.body;
+    const { masterfield, password } = req.body;
 
     const selectdata =
-      "SELECT * FROM studentdata WHERE email = ? OR userName = ? OR mobile = ?";
+      "SELECT * FROM studentdata WHERE email = ? OR username = ? OR phone = ?";
     connection.query(
       selectdata,
-      [email, userName, mobile],
+      [masterfield, masterfield, masterfield],
       async (err, results) => {
-        // if (err) {
-        //   return res.status(400).json({
-        //     status: StatusCodes.BAD_REQUEST,
-        //     message: responsemessage.NOTFOUND,
-        //   });
-        // } else
-        if (!results || results.length === 0) {
+        if (err) {
+          return res.status(400).json({
+            status: StatusCodes.BAD_REQUEST,
+            message: responsemessage.NOTFOUND,
+          });
+        } else if (!results || results.length === 0) {
           return res.status(404).json({
             status: StatusCodes.BAD_REQUEST,
             error: true,
@@ -142,7 +132,7 @@ exports.SignIn = async (req, res) => {
                 return res.status(200).json({
                   status: StatusCodes.OK,
                   userLogin: userLogin.email,
-                  Mobile: userLogin.mobile,
+                  phone: userLogin.phone,
                   success: true,
                   token: token,
                   message: responsemessage.SUCCESS,
@@ -161,9 +151,92 @@ exports.SignIn = async (req, res) => {
   }
 };
 
-exports.UserFind = async (req, res) => {
+exports.studentFind = async (req, res) => {
   try {
-    let userId = req.currentUser;
+    const token = req.headers.authorization;
+
+    if (blockTokens.has(token)) {
+      return res.status(401).json({
+        status: StatusCodes.UNAUTHORIZED,
+        message: "User logged out.",
+      });
+    } else {
+      const selectdata = "SELECT * FROM studentdata WHERE id = ?";
+      connection.query(
+        selectdata,
+        [req.currentUser],
+        async (error, results) => {
+          if (error) {
+            return res.status(400).json({
+              status: StatusCodes.BAD_REQUEST,
+              message: responsemessage.NOTFOUND,
+            });
+          } else {
+            res.status(200).json({
+              status: StatusCodes.OK,
+              message: responsemessage.FOUNDUSER,
+              results,
+            });
+          }
+        }
+      );
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: responsemessage.INTERNAL_SERVER_ERROR,
+    });
+  }
+};
+
+exports.studentDelete = async (req, res) => {
+  try {
+    const userId = req.currentUser;
+
+    const selectData = "SELECT * FROM studentdata WHERE id = ?";
+    connection.query(selectData, [userId], (error, results) => {
+      if (error) {
+        return res.status(400).json({
+          status: StatusCodes.BAD_REQUEST,
+          message: responsemessage.NOTFOUND,
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          status: StatusCodes.NOT_FOUND,
+          message: responsemessage.NOTFOUND,
+        });
+      }
+
+      const user = results[0];
+
+      const deleteData = "DELETE FROM studentdata WHERE id = ?";
+      connection.query(deleteData, [userId], (error) => {
+        if (error) {
+          return res.status(404).json({
+            status: StatusCodes.NOT_FOUND,
+            message: responsemessage.NOTFOUND,
+          });
+        }
+
+        return res.status(200).json({
+          status: StatusCodes.OK,
+          user,
+          message: responsemessage.DELETE,
+        });
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: responsemessage.INTERNAL_SERVER_ERROR,
+    });
+  }
+};
+exports.studentSoftDelete = async (req, res) => {
+  try {
+    const userId = req.currentUser;
 
     const selectdata = "SELECT * FROM studentdata WHERE id = ?";
     connection.query(selectdata, [userId], async (error, results) => {
@@ -173,36 +246,9 @@ exports.UserFind = async (req, res) => {
           message: responsemessage.NOTFOUND,
         });
       } else {
-        res.status(200).json({
-          status: StatusCodes.OK,
-          results,
-          message: responsemessage.FOUNDUSER,
-        });
-      }
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: responsemessage.INTERNAL_SERVER_ERROR,
-    });
-  }
-};
-
-exports.UserDelete = async (req, res) => {
-  try {
-    let userId = req.currentUser;
-
-    const selectdata = "SELECT * FROM studentdata WHERE id = ?";
-    connection.query(selectdata, [userId], async (error, results) => {
-      if (error) {
-        return res.status(404).json({
-          status: StatusCodes.NOT_FOUND,
-          message: responsemessage.NOTFOUND,
-        });
-      } else {
         const user = results[0];
-
-        const updatedata = "UPDATE studentdata SET isactive = true WHERE id = ?";
+        const updatedata =
+          "UPDATE studentdata SET isactive = true WHERE id = ?";
         connection.query(updatedata, [userId], (error) => {
           if (error) {
             return res.status(404).json({
@@ -213,7 +259,7 @@ exports.UserDelete = async (req, res) => {
             return res.status(200).json({
               status: StatusCodes.OK,
               user,
-              message: responsemessage.DELETE,
+              message: responsemessage.DELETED,
             });
           }
         });
@@ -250,7 +296,9 @@ exports.UserUpdate = async (req, res) => {
           checkQuery,
           [email, mobile],
           async (error, results) => {
-            let existemail = results.find((studentdata) => studentdata.email === email);
+            let existemail = results.find(
+              (studentdata) => studentdata.email === email
+            );
 
             const existmobile = results.find(
               (studentdata) => studentdata.mobile === parseInt(mobile, 10)
@@ -549,24 +597,32 @@ exports.ResetPassword = async (req, res) => {
 };
 
 exports.UserLogout = (req, res) => {
-  const userId = req.currentUser;
+  const token = req.headers.authorization;
 
-  connection.query(
-    "SELECT * FROM studentdata WHERE id = ?",
-    [userId],
-    (error, results) => {
-      if (error) {
-        console.log(error);
-        return res.status(400).json({
-          status: StatusCodes.BAD_REQUEST,
-          message: responsemessage.LOGOUTERROR,
-        });
-      }
+  blockTokens.add(token);
 
-      return res.status(200).json({
-        status: StatusCodes.OK,
-        message: StatusCodes.USERLOGOUT,
-      });
-    }
-  );
+  return res.status(200).json({
+    status: StatusCodes.OK,
+    message: "MessageRespons.logout",
+  });
 };
+// const userId = req.currentUser;
+// connection.query(
+//   "SELECT * FROM studentdata WHERE id = ?",
+//   [userId],
+//   (error, results) => {
+//     if (error) {
+//       console.log(error);
+//       return res.status(400).json({
+//         status: StatusCodes.BAD_REQUEST,
+//         message: responsemessage.LOGOUTERROR,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       status: StatusCodes.OK,
+//       message: StatusCodes.USERLOGOUT,
+//     });
+//   }
+// );
+// };
