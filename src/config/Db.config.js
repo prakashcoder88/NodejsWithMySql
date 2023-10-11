@@ -1,43 +1,25 @@
-// const Connection = require("tedious").Connection;
-const Connection = require("mssql");
-const { USER,PASSWORD,HOST,PORT,DATABASE,DIALECT } = process.env;
-let config = {
-  server: 'prakash.company.localhost',
-  port:PORT,
-  // database:database,
-  authentication: {
-    type: "default",
-    options: {
-      userName: USER,
-      password: PASSWORD,
-    },
-  },
-};
+const mysql = require("mysql");
+require("dotenv").config();
 
+const { USER, PASSWORD, DATABASE } = process.env;
 
-var connection = new Connection(config)
-  Connection.on("connect", function (err) {
-    if (!err) {
-      console.log("Not Connected");
-    } else {
-      console.log("Connected");
-    
-    }
-    console.log(Connection);
-  });
-  Connection.connect();
+const connection = mysql.createConnection({
+  host: "localhost",
+  user: USER,
+  password: PASSWORD,
+  database: DATABASE
+});
+
+connection.connect((err) => {
+  if (err) {
+    console.error("Connection failed: " + err.message);
+  } else {
+    console.log("Successfully connected to the database");
+  }
+});
+
+module.exports = connection;
 
 
 
-// console.log(connection);
 
-
-
-// module.exports = {
-//   HOST: HOST,
-//   PORT: PORT,
-//   USER: USER,
-//   PASSWORD: PASSWORD,
-//   DATABASE: DATABASE,
-//   DIALECT:DIALECT
-// }
