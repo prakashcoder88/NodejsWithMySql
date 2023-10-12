@@ -7,7 +7,7 @@ const path = require("path");
 
 const maxSize = 2 * 1024 * 1024;
 
-// File UploadPath
+
 let storage = multer.diskStorage({
   destination: function (req, file, cb) {
     if (file.fieldname === "profile") {
@@ -36,7 +36,7 @@ async function uploadFile(req, res, next) {
       if (req.files && req.files.profile) {
         const profilepath = req.files.profile[0].filename;
         req.profileUrl = profilepath;
-        // console.log(req.profileUrl);
+       
       }
 
       if (req.files && req.files.document) {
@@ -44,7 +44,7 @@ async function uploadFile(req, res, next) {
           const documentpath = file.filename;
           return documentpath;
         });
-        // console.log( req.documentUrl);
+       
       }
 
       next();
