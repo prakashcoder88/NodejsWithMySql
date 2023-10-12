@@ -1,6 +1,6 @@
 const express = require("express");
 const admindata = require("../controller/admin/AdminController")
-const useraccess = require("../controller/admin/UserManegment")
+const studentaccess = require("../controller/admin/StudentManegment")
 // const connection = require("../../config/Db.config");
 const CommonService = require("../services/CommonService")
 const uploadFile = require("../middleware/FileUpload")
@@ -11,7 +11,7 @@ const {adminauthenticationToken} = require("../middleware/auth")
 //Admin Routes
 router.post("/signup",  admindata.AdminSingup);
 router.post("/signin",  admindata.AdminSingIn);
-router.patch("/update", adminauthenticationToken,uploadFile,admindata.UpdateAdminData)
+router.patch("/update", adminauthenticationToken,uploadFile,admindata.Updateadmin)
 router.patch("/resetpassword",  adminauthenticationToken,admindata.AdminResetPassword);
 router.post("/SendOTP",  admindata.SendOTP);
 router.post("/forgotpassword",  admindata.AdminForgotPassword);
@@ -22,11 +22,11 @@ router.post("/verifyotp",  CommonService.AdminVerifyOTP);
 
 
 //User Routes
-router.post("/usersingup",  adminauthenticationToken,uploadFile,useraccess.SignUp);
-router.get("/userfind", adminauthenticationToken,useraccess.UserFind);
-router.get("/alluser", adminauthenticationToken,useraccess.UserFindAll);
-router.delete("/userdelete", adminauthenticationToken,useraccess.UserDelete);
-router.patch("/userupdate", adminauthenticationToken,uploadFile,useraccess.UserUpdate,);
-router.patch("/useractive", adminauthenticationToken,useraccess.userActive);
+router.post("/studentsingup",  adminauthenticationToken,studentaccess.SignUp);
+router.get("/studentfind", adminauthenticationToken,studentaccess.StudentFind);
+router.get("/allstudent", adminauthenticationToken,studentaccess.StudentFindAll);
+router.delete("/studentdelete", adminauthenticationToken,studentaccess.StudentDelete);
+router.patch("/studentupdate", adminauthenticationToken,studentaccess.StudentUpdate,);
+router.patch("studentactive", adminauthenticationToken,studentaccess.StudentActive);
 
 module.exports = router;

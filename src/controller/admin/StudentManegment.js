@@ -3,37 +3,35 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const {
   passwordencrypt,
-  generateOTP,
   validatePassword,
 } = require("../../services/CommonService");
 const responsemessage = require("../../utils/ResponseMessage.json");
-const sendEmail = require("../../services/EmailService");
-const { generateJwt } = require("../../utils/jwt");
-const express = require("express");
-// const connection = require("../../config/Db.config");
+const connection = require("../../config/Db.config");
 const uploadFile = require("../../middleware/FileUpload");
 const { StatusCodes } = require("http-status-codes");
 
 exports.SignUp = async (req, res) => {
-  let { firstName, lastName, email, mobile, password } = req.body;
-  try {
-    empid = Math.floor(1000 + Math.random() * 9999);
-    userName =
-      (firstName + lastName).toLowerCase() +
-      Math.floor(10 + Math.random() * 100);
-    mobile = parseInt(mobile, 10);
+  let { StudentName, email, phone, password } = req.body;
 
-    const checkQuery = "SELECT * FROM empdata WHERE email = ? OR mobile = ?";
-    connection.query(checkQuery, [email, mobile], async (error, results) => {
-      let existemail = results.find((empdata) => empdata.email === email);
-      let existmobile = results.find(
-        (empdata) => empdata.mobile === parseInt(mobile, 10)
+  try {
+    StudentName = StudentName.replace(/\s/g, "");
+    username =
+      StudentName.toLowerCase() + Math.floor(Math.random().toFixed(2) * 100);
+
+    const checkQuery = "SELECT * FROM studentdata WHERE email = ? OR phone = ?";
+
+    connection.query(checkQuery, [email, phone], async (error, results) => {
+      let existemail = results.find(
+        (studentdata) => studentdata.email === email
+      );
+      let existphone = results.find(
+        (studentdata) => studentdata.phone === phone
       );
 
-      if (existemail || existmobile) {
+      if (existemail || existphone) {
         const message = existemail
           ? responsemessage.EMAILEXITS
-          : responsemessage.MOBILEEXITS;
+          : responsemessage.phoneEXITS;
 
         res.status(400).json({
           status: StatusCodes.BAD_REQUEST,
@@ -46,24 +44,21 @@ exports.SignUp = async (req, res) => {
             message: responsemessage.VALIDATEPASS,
           });
         } else {
-          const profile = req.profileUrl || "";
-          const document = JSON.stringify(req.documentUrl) || "";
-
           const hashPassword = await passwordencrypt(password);
+
           const insertQuery =
-            "INSERT INTO empdata (empid,userName, firstName, lastName, email, mobile, password,profile, document) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO studentdata (StudentName, username, email, phone, password) VALUES (?,?, ?, ?, ?)";
+
           connection.query(
             insertQuery,
-            [empid, userName, firstName, lastName, email, mobile, hashPassword,profile,document],
+            [StudentName, username, email, phone, hashPassword],
             (error, insertResults) => {
               if (error) {
-  
                 return res.status(400).json({
                   status: StatusCodes.BAD_REQUEST,
                   message: responsemessage.NOTCREATED,
                 });
               } else {
-       
                 return res.status(201).json({
                   status: StatusCodes.CREATED,
                   message: responsemessage.CREATED,
@@ -82,81 +77,12 @@ exports.SignUp = async (req, res) => {
   }
 };
 
-// exports.SignIn = async (req, res) => {
-//   try {
-//     const { userName, email, mobile, password } = req.body;
-
-//     const selectdata =
-//       "SELECT * FROM empdata WHERE email = ? OR userName = ? OR mobile = ?";
-//     connection.query(
-//       selectdata,
-//       [email, userName, mobile],
-//       async (err, results) => {
-//         if (err) {
-//           return res.status(400).json({
-//             status: StatusCodes.BAD_REQUEST,
-//             message: responsemessage.NOTFOUND,
-//           });
-//         } else if (!results || results.length === 0) {
-//           return res.status(404).json({
-//             status: 404,
-//             error: true,
-//             message: responsemessage.NOTFOUND,
-//           });
-//         } else {
-//           const userLogin = results[0];
-
-//           if (userLogin.isactive) {
-//             return res.status(401).json({
-//               status: 401,
-//               message: responsemessage.ISACTIVE,
-//             });
-//           } else {
-//             const isvalid = await bcrypt.compare(password, userLogin.password);
-
-//             if (!isvalid) {
-//               return res.status(404).json({
-//                 status: 404,
-//                 error: true,
-//                 message: responsemessage.NOTMATCH,
-//               });
-//             } else {
-//               const { error, token } = await generateJwt(userLogin.id);
-//               if (error) {
-//                 return res.status(400).json({
-//                   status: 400,
-//                   error: true,
-//                   message: responsemessage.TOKEN,
-//                 });
-//               } else {
-//                 return res.status(201).json({
-//                   status: 201,
-//                   userLogin: userLogin.email, // Make sure you have these properties in your empdata table
-//                   Mobile: userLogin.mobile,
-//                   success: true,
-//                   token: token,
-//                   message: responsemessage.SUCCESS,
-//                 });
-//               }
-//             }
-//           }
-//         }
-//       }
-//     );
-//   } catch (error) {
-//     return res.status(500).json({
-//       status: StatusCodes.INTERNAL_SERVER_ERROR,
-//       message: responsemessage.INTERNAL_SERVER_ERROR,
-//     });
-//   }
-// };
-
-exports.UserFind = async (req, res) => {
+exports.StudentFind = async (req, res) => {
   try {
-    let userId = req.currentUser;
+    let { id } = req.body;
 
-    const selectdata = "SELECT * FROM empdata WHERE id = ?";
-    connection.query(selectdata, [userId], async (error, results) => {
+    const selectdata = "SELECT * FROM studentdata WHERE id = ?";
+    connection.query(selectdata, [id], async (error, results) => {
       if (error) {
         return res.status(404).json({
           status: StatusCodes.NOT_FOUND,
@@ -177,11 +103,9 @@ exports.UserFind = async (req, res) => {
     });
   }
 };
-exports.UserFindAll = async (req, res) => {
+exports.StudentFindAll = async (req, res) => {
   try {
-    let userId = req.currentUser;
-
-    const selectdata = "SELECT * FROM empdata";
+    const selectdata = "SELECT * FROM studentdata";
     connection.query(selectdata, (error, results) => {
       if (error) {
         return res.status(404).json({
@@ -204,11 +128,11 @@ exports.UserFindAll = async (req, res) => {
   }
 };
 
-exports.UserDelete = async (req, res) => {
+exports.StudentDelete = async (req, res) => {
   try {
-    let {id} = req.body
+    let { id } = req.body;
 
-    const selectdata = "SELECT * FROM empdata WHERE id = ?";
+    const selectdata = "SELECT * FROM studentdata WHERE id = ?";
     connection.query(selectdata, id, async (error, results) => {
       if (error) {
         return res.status(400).json({
@@ -218,7 +142,8 @@ exports.UserDelete = async (req, res) => {
       } else {
         const user = results[0];
         console.log(user);
-        const updatedata = "UPDATE empdata SET isactive = true WHERE id = ?";
+        const updatedata =
+          "UPDATE studentdata SET isactive = true WHERE id = ?";
         connection.query(updatedata, id, (error) => {
           if (error) {
             return res.status(404).json({
@@ -243,15 +168,13 @@ exports.UserDelete = async (req, res) => {
   }
 };
 
-exports.UserUpdate = async (req, res) => {
+exports.StudentUpdate = async (req, res) => {
   try {
-    let { email, mobile } = req.body;
+    let { id, email, phone } = req.body;
 
-    let userId = req.currentUser;
+    const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
 
-    const selectQuery = "SELECT * FROM empdata WHERE id = ?";
-
-    connection.query(selectQuery, [userId], async (error, results) => {
+    connection.query(selectQuery, [id], async (error, results) => {
       if (error) {
         return res.status(400).json({
           status: StatusCodes.BAD_REQUEST,
@@ -260,80 +183,78 @@ exports.UserUpdate = async (req, res) => {
       } else {
         const existingUser = results[0];
         const checkQuery =
-          "SELECT * FROM empdata WHERE email = ? OR mobile = ?";
+          "SELECT * FROM studentdata WHERE email = ? OR phone = ?";
 
-        connection.query(
-          checkQuery,
-          [email, mobile],
-          async (error, results) => {
-            let existemail = results.find((empdata) => empdata.email === email);
+        connection.query(checkQuery, [email, phone], async (error, results) => {
+          let existemail = results.find(
+            (studentdata) => studentdata.email === email
+          );
 
-            const existmobile = results.find(
-              (empdata) => empdata.mobile === parseInt(mobile, 10)
-            );
+          const existphone = results.find(
+            (studentdata) => studentdata.phone === parseInt(phone, 10)
+          );
 
-            if (existemail || existmobile) {
-              const message = existemail
-                ? responsemessage.EMAILEXITS
-                : responsemessage.MOBILEEXITS;
+          if (existemail || existphone) {
+            const message = existemail
+              ? responsemessage.EMAILEXITS
+              : responsemessage.MOBILEEXITS;
 
-              res.status(400).json({
-                status: StatusCodes.BAD_REQUEST,
-                message,
+            res.status(400).json({
+              status: StatusCodes.BAD_REQUEST,
+              message,
+            });
+          } else {
+            const useremail = email ? email.toLowerCase() : undefined;
+            console.log();
+            const profile = req.profileUrl;
+            const document = JSON.stringify(req.documentUrl);
+
+            const updatedatas = [];
+            const updateValues = [];
+
+            if (email) {
+              updatedatas.push("email = ?");
+              updateValues.push(email.toLowerCase());
+            }
+            if (mobile) {
+              updatedatas.push("mobile = ?");
+              updateValues.push(parseInt(mobile, 10));
+            }
+            if (profile) {
+              updatedatas.push("profile = ?");
+              updateValues.push(profile);
+            }
+            if (document) {
+              updatedatas.push("document = ?");
+              updateValues.push(document);
+            }
+            if (updatedatas.length === 0) {
+              return res.status(404).json({
+                status: StatusCodes.NOT_FOUND,
+                message: responsemessage.NOTFOUND,
               });
             } else {
-              const useremail = email ? email.toLowerCase() : undefined;
-              console.log();
-              const profile = req.profileUrl;
-              const document = JSON.stringify(req.documentUrl);
+              const updateQuery = `UPDATE studentdata SET ${updatedatas.join(
+                ", "
+              )} WHERE id = ?`;
+              updateValues.push(userId);
 
-              const updatedatas = [];
-              const updateValues = [];
-      
-              if (email) {
-                updatedatas.push("email = ?");
-                updateValues.push(email.toLowerCase());
-              }
-              if (mobile) {
-                updatedatas.push("mobile = ?");
-                updateValues.push(parseInt(mobile, 10));
-              }
-              if (profile) {
-                updatedatas.push("profile = ?");
-                updateValues.push(profile);
-              }
-              if (document) {
-                updatedatas.push("document = ?");
-                updateValues.push(document);
-              }
-              if (updatedatas.length === 0) {
-                return res.status(404).json({
-                  status: StatusCodes.NOT_FOUND,
-                  message: responsemessage.NOTFOUND,
-                });
-              } else {
-                const updateQuery = `UPDATE empdata SET ${updatedatas.join(
-                  ", "
-                )} WHERE id = ?`;
-                updateValues.push(userId);
-
-                connection.query(updateQuery, updateValues, (error) => {
-                  if (error) {
-                    return res.status(400).json({
-                      status: StatusCodes.BAD_REQUEST,
-                      message: responsemessage.NOTUPDATE,
-                    });
-                  }
-
-                  res.status(200).json({
-                    status: StatusCodes.OK,
-                    message: responsemessage.UPDATE,
+              connection.query(updateQuery, updateValues, (error) => {
+                if (error) {
+                  return res.status(400).json({
+                    status: StatusCodes.BAD_REQUEST,
+                    message: responsemessage.NOTUPDATE,
                   });
+                }
+
+                res.status(200).json({
+                  status: StatusCodes.OK,
+                  message: responsemessage.UPDATE,
                 });
-              }
+              });
             }
           }
-        );
+        });
       }
     });
   } catch (error) {
@@ -344,50 +265,59 @@ exports.UserUpdate = async (req, res) => {
   }
 };
 
-exports.userActive = async (req, res) => {
+exports.StudentActive = async (req, res) => {
   try {
-    const { empid } = req.body;
+    const { username } = req.body;
 
-    if (!empid) {
+    if (!username) {
       return res.status(400).json({
         status: StatusCodes.BAD_REQUEST,
         message: responsemessage.NOTEMPTY,
       });
     }
 
-    const selectQuery = 'SELECT * FROM empdata WHERE empid = ?';
-    connection.query(selectQuery, [empid], async (selectError, [empRows]) => {
-      if (selectError) {
-        console.error({ selectError });
-        return res.status(500).json({
-          status: StatusCodes.INTERNAL_SERVER_ERROR,
-          message: responsemessage.INTERNAL_SERVER_ERROR,
-        });
-      }
-
-      if (empRows.length === 0) {
-        return res.status(404).json({
-          status: StatusCodes.NOT_FOUND,
-          message: responsemessage.NOTFOUND,
-        });
-      } else {
-        const updateQuery = 'UPDATE empdata SET isactive = ? WHERE empid = ?';
-        connection.query(updateQuery, [false, empid], async (updateError) => {
-          if (updateError) {
-            console.error({ updateError });
-            return res.status(500).json({
-              status: StatusCodes.INTERNAL_SERVER_ERROR,
-              message: responsemessage.INTERNAL_SERVER_ERROR,
-            });
-          }
-
-          return res.status(200).json({
-            status: StatusCodes.OK,
-            message: responsemessage.USERACTIVE,
+    const selectQuery = "SELECT * FROM studentdata WHERE username = ?";
+    connection.query(
+      selectQuery,
+      [username],
+      async (selectError, [StudentRows]) => {
+        if (selectError) {
+          console.error({ selectError });
+          return res.status(500).json({
+            status: StatusCodes.INTERNAL_SERVER_ERROR,
+            message: responsemessage.INTERNAL_SERVER_ERROR,
           });
-        });
+        }
+
+        if (StudentRows.length === 0) {
+          return res.status(404).json({
+            status: StatusCodes.NOT_FOUND,
+            message: responsemessage.NOTFOUND,
+          });
+        } else {
+          const updateQuery =
+            "UPDATE studentdata SET isactive = ? WHERE username = ?";
+          connection.query(
+            updateQuery,
+            [false, username],
+            async (updateError) => {
+              if (updateError) {
+                console.error({ updateError });
+                return res.status(500).json({
+                  status: StatusCodes.INTERNAL_SERVER_ERROR,
+                  message: responsemessage.INTERNAL_SERVER_ERROR,
+                });
+              }
+
+              return res.status(200).json({
+                status: StatusCodes.OK,
+                message: responsemessage.USERACTIVE,
+              });
+            }
+          );
+        }
       }
-    });
+    );
   } catch (error) {
     console.error({ error });
     res.status(304).json({
@@ -406,7 +336,7 @@ exports.userActive = async (req, res) => {
 //       timeZone: "Asia/Kolkata",
 //     });
 
-//     const userQuery = "SELECT * FROM empdata WHERE email = ?";
+//     const userQuery = "SELECT * FROM studentdata WHERE email = ?";
 
 //     connection.query(userQuery, [email], async (userError, userRows) => {
 //       console.log(userRows);
@@ -427,7 +357,7 @@ exports.userActive = async (req, res) => {
 //         const OTP = generateOTP(); // Replace this with your OTP generation logic
 
 //         const updateUserQuery =
-//           "UPDATE empdata SET otp = ?, otpExpire = ? WHERE email = ?";
+//           "UPDATE studentdata SET otp = ?, otpExpire = ? WHERE email = ?";
 
 //         const updateParams = [OTP, expiryIST, email];
 
@@ -491,7 +421,7 @@ exports.userActive = async (req, res) => {
 //         message: responsemessage.VALIDATEPASS,
 //       });
 //     } else {
-//       let selectQuery = "SELECT * FROM empdata WHERE email = ?";
+//       let selectQuery = "SELECT * FROM studentdata WHERE email = ?";
 //       connection.query(selectQuery, [email], async (userError, userRows) => {
 //         if (userRows.length === 0) {
 //           return res.status(404).json({
@@ -520,7 +450,7 @@ exports.userActive = async (req, res) => {
 //             const passwordHash = await passwordencrypt(newPassword);
 
 //             connection.query(
-//               "UPDATE empdata SET  otp = NULL,otpExpire= NULL,password = ? WHERE email = ?",
+//               "UPDATE studentdata SET  otp = NULL,otpExpire= NULL,password = ? WHERE email = ?",
 //               [passwordHash, email]
 //             );
 
@@ -546,7 +476,7 @@ exports.userActive = async (req, res) => {
 //   try {
 //     const { id, oldPassword, newPassword, confirmPassword } = req.body;
 
-//     const selectQuery = "SELECT * FROM empdata WHERE id = ?";
+//     const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
 
 //     connection.query(selectQuery, [id], async (error, results) => {
 //       if (results.length === 0) {
@@ -589,7 +519,7 @@ exports.userActive = async (req, res) => {
 //             } else {
 //               const hashedPassword = await passwordencrypt(newPassword);
 //               const updateQuery =
-//                 "UPDATE empdata SET password = ? WHERE id = ?";
+//                 "UPDATE studentdata SET password = ? WHERE id = ?";
 //               connection.query(
 //                 updateQuery,
 //                 [hashedPassword, id],
@@ -625,7 +555,7 @@ exports.userActive = async (req, res) => {
 //   const userId = req.currentUser;
 
 //   connection.query(
-//     "SELECT * FROM empdata WHERE id = ?",
+//     "SELECT * FROM studentdata WHERE id = ?",
 //     [userId],
 //     (error, results) => {
 //       if (error) {

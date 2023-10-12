@@ -1,7 +1,4 @@
-// const express = require("express");
-// require("dotenv").config();
 
-// const root = require("../../models/Admin");
 const responsemessage = require("../../utils/ResponseMessage.json");
 const sendEmail = require("../../services/EmailService");
 const {
@@ -12,26 +9,27 @@ const {
 const { admingenerateJwt } = require("../../utils/jwt");
 // require("../../middleware/FileUpload");
 
-// let isadminuser = true;
+// let isadmindatauser = true;
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { StatusCodes } = require("http-status-codes");
-
-// const connection = require("../../config/Db.config");
+const connection = require("../../config/Db.config");
 
 exports.AdminSingup = (req, res) => {
-  let { userName, email, mobile, password } = req.body;
+  let { username, email, phone, password } = req.body;
   try {
-    const checkQuery = "SELECT * FROM admindata WHERE email = ? OR mobile = ?";
-    connection.query(checkQuery, [email, mobile], async (error, results) => {
+
+
+    const checkQuery = "SELECT * FROM admindata WHERE email = ? OR phone = ?";
+    connection.query(checkQuery, [email, phone], async (error, results) => {
       let existemail = results.find((admindata) => admindata.email === email);
-      let existmobile = results.find(
-        (admindata) => admindata.mobile === parseInt(mobile, 10)
+      let existphone = results.find(
+        (admindata) => admindata.phone === parseInt(phone, 10)
       );
 
-      if (existemail || existmobile) {
+      if (existemail || existphone) {
         const message = existemail
           ? responsemessage.EMAILEXITS
           : responsemessage.MOBILEEXITS;
@@ -48,11 +46,12 @@ exports.AdminSingup = (req, res) => {
           });
         } else {
           const hashPassword = await passwordencrypt(password);
+          const useremail = email ? email.toLowerCase() : undefined;
           const insertQuery =
-            "INSERT INTO admindata (userName, email, mobile, password) VALUES (?,?, ?, ?)";
+            "INSERT INTO admindata (username, email, phone, password) VALUES (?,?, ?, ?)";
           connection.query(
             insertQuery,
-            [userName, email, mobile, hashPassword],
+            [username, useremail, phone, hashPassword],
             (error, insertResults) => {
               if (error) {
                 return res.status(400).json({
@@ -79,13 +78,13 @@ exports.AdminSingup = (req, res) => {
 };
 exports.AdminSingIn = async (req, res) => {
   try {
-    const { userName, email, mobile, password } = req.body;
+    const { masterfield, password } = req.body;
 
     const selectdata =
-      "SELECT * FROM admindata WHERE email = ? OR userName = ? OR mobile = ?";
+      "SELECT * FROM admindata WHERE email = ? OR username = ? OR phone = ?";
     connection.query(
       selectdata,
-      [email, userName, mobile],
+      [masterfield, masterfield, masterfield],
       async (err, results) => {
         if (!results || results.length === 0) {
           return res.status(404).json({
@@ -141,11 +140,11 @@ exports.AdminSingIn = async (req, res) => {
   }
 };
 
-exports.UpdateAdminData = async (req, res) => {
+exports.Updateadmin = async (req, res) => {
   try {
-    let { email, mobile } = req.body;
+    let { email, phone } = req.body;
     console.log(req.body);
-    let userId = req.AdminUser;
+    let userId = req.admindataUser;
 
     const selectQuery = "SELECT * FROM admindata WHERE id = ?";
 
@@ -158,21 +157,21 @@ exports.UpdateAdminData = async (req, res) => {
       } else {
         const existingUser = results[0];
         const checkQuery =
-          "SELECT * FROM admindata WHERE email = ? OR mobile = ?";
+          "SELECT * FROM admindata WHERE email = ? OR phone = ?";
 
         connection.query(
           checkQuery,
-          [email, mobile],
+          [email, phone],
           async (error, results) => {
             let existemail = results.find(
               (admindata) => admindata.email === email
             );
 
-            const existmobile = results.find(
-              (admindata) => admindata.mobile === parseInt(mobile, 10)
+            const existphone = results.find(
+              (admindata) => admindata.phone === parseInt(phone, 10)
             );
 
-            if (existemail || existmobile) {
+            if (existemail || existphone) {
               const message = existemail
                 ? responsemessage.EMAILEXITS
                 : responsemessage.MOBILEEXITS;
@@ -194,9 +193,9 @@ exports.UpdateAdminData = async (req, res) => {
                 updatedatas.push("email = ?");
                 updateValues.push(email.toLowerCase());
               }
-              if (mobile) {
-                updatedatas.push("mobile = ?");
-                updateValues.push(mobile);
+              if (phone) {
+                updatedatas.push("phone = ?");
+                updateValues.push(phone);
               }
               if (profile) {
                 updatedatas.push("profile = ?");
@@ -456,7 +455,7 @@ exports.AdminResetPassword = async (req, res) => {
 };
 
 exports.Adminlogout = (req, res) => {
-  const userId = req.AdminUser;
+  const userId = req.admindataUser;
 
   connection.query(
     "SELECT * FROM empdata WHERE id = ?",
