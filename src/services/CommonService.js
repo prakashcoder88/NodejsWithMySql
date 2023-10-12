@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 // const EmpRegister = require("../models/User");
 // const adminuser = require("../models/Admin");
 const responsemessage = require("../utils/ResponseMessage.json");
-// const connection = require("../config/Db.config");
+const connection = require("../config/Db.config");
 const { StatusCodes } = require("http-status-codes");
 
 async function passwordencrypt(password) {
@@ -27,7 +27,8 @@ const VerifyOTP = async (req, res) => {
 
   try {
     let { email, otp } = req.body;
-    let selectQuery = 'SELECT * FROM empdata WHERE email = ?';
+
+    let selectQuery = 'SELECT * FROM studentdata WHERE email = ?';
     // let selectQuery1 = 'SELECT * FROM admindata WHERE email = ?';
     
     connection.query(selectQuery, [email], async (Error,userRows) =>{
@@ -39,7 +40,7 @@ const VerifyOTP = async (req, res) => {
         });
       } else {
         const user = userRows[0];
-       
+     
         if (otp !== user.otp) {
           return res.status(400).json({
             statust: StatusCodes.BAD_REQUEST,
@@ -56,10 +57,10 @@ const VerifyOTP = async (req, res) => {
             message: responsemessage.OTPEXPIRED,
           });
         } else {
-          connection.query(
-            "UPDATE admindata SET  otp = NULL, WHERE email = ?",
-            [otp]
-          );
+          // connection.query(
+          //   "UPDATE admindata SET  otp = NULL, WHERE email = ?",
+          //   [otp]
+          // );
           return res.status(200).json({
             status: StatusCodes.OK,
             message: responsemessage.OTPVIRIFY,

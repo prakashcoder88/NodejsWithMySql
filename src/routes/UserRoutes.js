@@ -12,11 +12,11 @@ router.delete("/delete", StudentValidateToken,StudentData.studentDelete);
 router.delete("/softdelete", StudentValidateToken,StudentData.studentSoftDelete);
 router.post("/logout", StudentValidateToken,StudentData.StudentLogout);
 router.post("/resetpassword", StudentValidateToken,StudentData.ChangePassword);
-
+router.post("/sendemail", StudentData.SendOTP);
+router.post("/verifyotp", CommonService.VerifyOTP);
 router.patch("/studentupdate", StudentValidateToken,StudentData.studentUpdate);
 router.post("/forgotpassword", StudentData.ForgotPassword);
-router.post("/sendotp", StudentData.SendOTP);
-router.post("/verifyotp", CommonService.VerifyOTP);
+
 
 
 

@@ -564,7 +564,7 @@ exports.ForgotPassword = async (req, res) => {
             const passwordHash = await passwordencrypt(newPassword);
 
             connection.query(
-              "UPDATE studentdata SET  otp = NULL,otpExpire= NULL,password = ? WHERE email = ?",
+              "UPDATE studentdata SET  otp = NULL,otpExpire = NULL,password = ? WHERE email = ?",
               [passwordHash, email],
               (updateError) => {
                 if (updateError) {
