@@ -141,7 +141,7 @@ exports.StudentDelete = async (req, res) => {
         });
       } else {
         const user = results[0];
-        console.log(user);
+       
         const updatedata =
           "UPDATE studentdata SET isactive = true WHERE id = ?";
         connection.query(updatedata, id, (error) => {
@@ -153,8 +153,10 @@ exports.StudentDelete = async (req, res) => {
           } else {
             return res.status(200).json({
               status: StatusCodes.OK,
-              user,
               message: responsemessage.DELETED,
+              user,
+              
+             
             });
           }
         });

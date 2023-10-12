@@ -27,6 +27,6 @@ router.get("/studentfind", adminauthenticationToken,studentaccess.StudentFind);
 router.get("/allstudent", adminauthenticationToken,studentaccess.StudentFindAll);
 router.delete("/studentdelete", adminauthenticationToken,studentaccess.StudentDelete);
 router.patch("/studentupdate", adminauthenticationToken,studentaccess.StudentUpdate,);
-router.patch("studentactive", adminauthenticationToken,studentaccess.StudentActive);
+router.patch("/studentactive", adminauthenticationToken,studentaccess.StudentActive);
 
 module.exports = router;
