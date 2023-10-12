@@ -1,8 +1,8 @@
 const nodemailer = require("nodemailer");
 const transpoter = require("../config/Email.config");
 // require("../models/User")
-// const connection = require("../config/Db.config");
-// const {generateOTP } = require("../../services/CommonService");
+const connection = require("../config/Db.config");
+// const {generateOTP } = require("../services/CommonService");
 
 async function sendEmail(email, OTP) {
   try {

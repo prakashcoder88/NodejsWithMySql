@@ -29,14 +29,14 @@ exports.SignUp = async (req, res) => {
       let existemail = results.find(
         (studentdata) => studentdata.email === email
       );
-      let existmobile = results.find(
+      let existphone = results.find(
         (studentdata) => studentdata.phone === phone
       );
 
-      if (existemail || existmobile) {
+      if (existemail || existphone) {
         const message = existemail
           ? responsemessage.EMAILEXITS
-          : responsemessage.MOBILEEXITS;
+          : responsemessage.phoneEXITS;
 
         res.status(400).json({
           status: StatusCodes.BAD_REQUEST,
@@ -273,10 +273,10 @@ exports.studentSoftDelete = async (req, res) => {
   }
 };
 
-exports.UserUpdate = async (req, res) => {
+exports.studentUpdate = async (req, res) => {
   try {
-    let { email, mobile } = req.body;
-    console.log(req.body);
+    let { email, phone } = req.body;
+
     let userId = req.currentUser;
 
     const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
@@ -290,24 +290,24 @@ exports.UserUpdate = async (req, res) => {
       } else {
         const existingUser = results[0];
         const checkQuery =
-          "SELECT * FROM studentdata WHERE email = ? OR mobile = ?";
+          "SELECT * FROM studentdata WHERE email = ? OR phone = ?";
 
         connection.query(
           checkQuery,
-          [email, mobile],
+          [email, phone],
           async (error, results) => {
             let existemail = results.find(
               (studentdata) => studentdata.email === email
             );
 
-            const existmobile = results.find(
-              (studentdata) => studentdata.mobile === parseInt(mobile, 10)
+            const existphone = results.find(
+              (studentdata) => studentdata.phone === parseInt(phone, 10)
             );
 
-            if (existemail || existmobile) {
+            if (existemail || existphone) {
               const message = existemail
                 ? responsemessage.EMAILEXITS
-                : responsemessage.MOBILEEXITS;
+                : responsemessage.phoneEXITS;
 
               res.status(400).json({
                 status: StatusCodes.BAD_REQUEST,
@@ -326,9 +326,9 @@ exports.UserUpdate = async (req, res) => {
                 updatedatas.push("email = ?");
                 updateValues.push(email.toLowerCase());
               }
-              if (mobile) {
-                updatedatas.push("mobile = ?");
-                updateValues.push(mobile);
+              if (phone) {
+                updatedatas.push("phone = ?");
+                updateValues.push(phone);
               }
               if (profile) {
                 updatedatas.push("profile = ?");
@@ -376,6 +376,83 @@ exports.UserUpdate = async (req, res) => {
   }
 };
 
+exports.ChangePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.currentUser;
+    const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
+
+    connection.query(selectQuery, [userId], async (error, results) => {
+      if (results.length === 0) {
+        return res.status(404).json({
+          status: StatusCodes.NOT_FOUND,
+          message: responsemessage.NOTFOUND,
+        });
+      } else {
+        const user = results[0];
+
+        if (!validatePassword(newPassword)) {
+          return res.status(400).json({
+            status: StatusCodes.BAD_REQUEST,
+            message: responsemessage.VALIDATEPASS,
+          });
+        } else {
+          const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+          if (!isMatch) {
+            return res.status(400).json({
+              status: StatusCodes.BAD_REQUEST,
+              message: "Old password not match",
+            });
+          } else {
+            const isSamePassword = await bcrypt.compare(
+              newPassword,
+              user.password
+            );
+            if (isSamePassword) {
+              return res.status(400).json({
+                status: StatusCodes.BAD_REQUEST,
+                message: "New and old password not match",
+              });
+            } else if (newPassword !== confirmPassword) {
+              return res.status(400).json({
+                status: StatusCodes.BAD_REQUEST,
+                message: "New and confirm password not match",
+              });
+            } else {
+              const hashedPassword = await passwordencrypt(newPassword);
+              const updateQuery =
+                "UPDATE studentdata SET password = ? WHERE id = ?";
+              connection.query(
+                updateQuery,
+                [hashedPassword, userId],
+                (updateError) => {
+                  if (updateError) {
+                    console.log(updateError);
+                    return res.status(400).json({
+                      status: StatusCodes.BAD_REQUEST,
+                      message: "Password not change",
+                    });
+                  } else {
+                    return res.status(200).json({
+                      status: 200,
+                      message: "Succefully change password",
+                    });
+                  }
+                }
+              );
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+    });
+  }
+};
 exports.SendOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -403,7 +480,7 @@ exports.SendOTP = async (req, res) => {
           message: responsemessage.NOTFOUND,
         });
       } else {
-        const OTP = generateOTP(); // Replace this with your OTP generation logic
+        const OTP = generateOTP(); 
 
         const updateUserQuery =
           "UPDATE studentdata SET otp = ?, otpExpire = ? WHERE email = ?";
@@ -413,7 +490,7 @@ exports.SendOTP = async (req, res) => {
         connection.query(
           updateUserQuery,
           updateParams,
-          async (updateUserError, updateResult) => {
+          async (updateError, updateResult) => {
             let response = await sendEmail(email, OTP);
             if (response.error) {
               return res.status(503).json({
@@ -513,85 +590,6 @@ exports.ForgotPassword = async (req, res) => {
     return res.status(500).json({
       status: StatusCodes.INTERNAL_SERVER_ERROR,
       message: responsemessage.INTERNAL_SERVER_ERROR,
-    });
-  }
-};
-
-exports.ResetPassword = async (req, res) => {
-  try {
-    const { id, oldPassword, newPassword, confirmPassword } = req.body;
-
-    const selectQuery = "SELECT * FROM studentdata WHERE id = ?";
-
-    connection.query(selectQuery, [id], async (error, results) => {
-      if (results.length === 0) {
-        return res.status(404).json({
-          status: StatusCodes.NOT_FOUND,
-          message: responsemessage.NOTFOUND,
-        });
-      } else {
-        const user = results[0];
-        console.log(user);
-
-        if (!validatePassword(newPassword)) {
-          return res.status(400).json({
-            status: StatusCodes.BAD_REQUEST,
-            message: responsemessage.VALIDATEPASS,
-          });
-        } else {
-          const isMatch = await bcrypt.compare(oldPassword, user.password);
-
-          if (!isMatch) {
-            return res.status(400).json({
-              status: StatusCodes.BAD_REQUEST,
-              message: responsemessage.OLDPASSWORD,
-            });
-          } else {
-            const isSamePassword = await bcrypt.compare(
-              newPassword,
-              user.password
-            );
-            if (isSamePassword) {
-              return res.status(400).json({
-                status: StatusCodes.BAD_REQUEST,
-                message: responsemessage.NEWDIFFERENTOLD,
-              });
-            } else if (newPassword !== confirmPassword) {
-              return res.status(400).json({
-                status: StatusCodes.BAD_REQUEST,
-                message: responsemessage.NEWCOMMATCH,
-              });
-            } else {
-              const hashedPassword = await passwordencrypt(newPassword);
-              const updateQuery =
-                "UPDATE studentdata SET password = ? WHERE id = ?";
-              connection.query(
-                updateQuery,
-                [hashedPassword, id],
-                (updateError) => {
-                  if (updateError) {
-                    console.log(updateError);
-                    return res.status(400).json({
-                      status: StatusCodes.BAD_REQUEST,
-                      message: responsemessage.PASSNOTCHANGE,
-                    });
-                  } else {
-                    return res.status(200).json({
-                      status: 200,
-                      message: responsemessage.PSSWORDCHANGESUCC,
-                    });
-                  }
-                }
-              );
-            }
-          }
-        }
-      }
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: 500,
-      message: "Internal server error",
     });
   }
 };
