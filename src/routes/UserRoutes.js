@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const StudentData = require("../controller/user/UserController")
+const StudentData = require("../controller/user/StudentController")
 const CommonService = require("../services/CommonService")
 const {StudentValidateToken} = require("../middleware/auth")
 const uploadFile = require("../middleware/FileUpload")
