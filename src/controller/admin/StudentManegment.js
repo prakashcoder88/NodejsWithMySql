@@ -14,9 +14,9 @@ exports.SignUp = async (req, res) => {
   let { StudentName, email, phone, password } = req.body;
 
   try {
-    StudentName = StudentName.replace(/\s/g, "");
+    // StudentName = StudentName.replace(/\s/g, "");
     username =
-      StudentName.toLowerCase() + Math.floor(Math.random().toFixed(2) * 100);
+      StudentName.replace(/\s/g, "").toLowerCase() + Math.floor(Math.random().toFixed(2) * 100);
 
     const checkQuery = "SELECT * FROM studentdata WHERE email = ? OR phone = ?";
 

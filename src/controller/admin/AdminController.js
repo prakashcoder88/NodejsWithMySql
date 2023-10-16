@@ -1,4 +1,3 @@
-
 const responsemessage = require("../../utils/ResponseMessage.json");
 const sendEmail = require("../../services/EmailService");
 const {
@@ -20,8 +19,6 @@ const connection = require("../../config/Db.config");
 exports.AdminSingup = (req, res) => {
   let { username, email, phone, password } = req.body;
   try {
-
-
     const checkQuery = "SELECT * FROM admindata WHERE email = ? OR phone = ?";
     connection.query(checkQuery, [email, phone], async (error, results) => {
       let existemail = results.find((admindata) => admindata.email === email);
@@ -88,7 +85,7 @@ exports.AdminSingIn = async (req, res) => {
       async (err, results) => {
         if (!results || results.length === 0) {
           return res.status(404).json({
-            status: 404,
+            status: StatusCodes.BAD_REQUEST,
             error: true,
             message: responsemessage.NOTFOUND,
           });
@@ -159,80 +156,76 @@ exports.Updateadmin = async (req, res) => {
         const checkQuery =
           "SELECT * FROM admindata WHERE email = ? OR phone = ?";
 
-        connection.query(
-          checkQuery,
-          [email, phone],
-          async (error, results) => {
-            let existemail = results.find(
-              (admindata) => admindata.email === email
-            );
+        connection.query(checkQuery, [email, phone], async (error, results) => {
+          let existemail = results.find(
+            (admindata) => admindata.email === email
+          );
 
-            const existphone = results.find(
-              (admindata) => admindata.phone === parseInt(phone, 10)
-            );
+          const existphone = results.find(
+            (admindata) => admindata.phone === parseInt(phone, 10)
+          );
 
-            if (existemail || existphone) {
-              const message = existemail
-                ? responsemessage.EMAILEXITS
-                : responsemessage.MOBILEEXITS;
+          if (existemail || existphone) {
+            const message = existemail
+              ? responsemessage.EMAILEXITS
+              : responsemessage.MOBILEEXITS;
 
-              res.status(400).json({
-                status: StatusCodes.BAD_REQUEST,
-                message,
+            res.status(400).json({
+              status: StatusCodes.BAD_REQUEST,
+              message,
+            });
+          } else {
+            // const useremail = email ? email.toLowerCase() : undefined;
+            console.log();
+            const profile = req.profileUrl;
+            const document = JSON.stringify(req.documentUrl);
+
+            const updatedatas = [];
+            const updateValues = [];
+
+            if (email) {
+              updatedatas.push("email = ?");
+              updateValues.push(email.toLowerCase());
+            }
+            if (phone) {
+              updatedatas.push("phone = ?");
+              updateValues.push(phone);
+            }
+            if (profile) {
+              updatedatas.push("profile = ?");
+              updateValues.push(profile);
+            }
+            if (document) {
+              updatedatas.push("document = ?");
+              updateValues.push(document);
+            }
+            if (updatedatas.length === 0) {
+              return res.status(404).json({
+                status: StatusCodes.NOT_FOUND,
+                message: responsemessage.NOTFOUND,
               });
             } else {
-              // const useremail = email ? email.toLowerCase() : undefined;
-              console.log();
-              const profile = req.profileUrl;
-              const document = JSON.stringify(req.documentUrl);
+              const updateQuery = `UPDATE admindata SET ${updatedatas.join(
+                ", "
+              )} WHERE id = ?`;
+              updateValues.push(userId);
 
-              const updatedatas = [];
-              const updateValues = [];
-
-              if (email) {
-                updatedatas.push("email = ?");
-                updateValues.push(email.toLowerCase());
-              }
-              if (phone) {
-                updatedatas.push("phone = ?");
-                updateValues.push(phone);
-              }
-              if (profile) {
-                updatedatas.push("profile = ?");
-                updateValues.push(profile);
-              }
-              if (document) {
-                updatedatas.push("document = ?");
-                updateValues.push(document);
-              }
-              if (updatedatas.length === 0) {
-                return res.status(404).json({
-                  status: StatusCodes.NOT_FOUND,
-                  message: responsemessage.NOTFOUND,
-                });
-              } else {
-                const updateQuery = `UPDATE admindata SET ${updatedatas.join(
-                  ", "
-                )} WHERE id = ?`;
-                updateValues.push(userId);
-
-                connection.query(updateQuery, updateValues, (error) => {
-                  if (error) {
-                    return res.status(400).json({
-                      status: StatusCodes.BAD_REQUEST,
-                      message: responsemessage.NOTUPDATE,
-                    });
-                  }
-
-                  res.status(200).json({
-                    status: StatusCodes.OK,
-                    message: responsemessage.UPDATE,
+              connection.query(updateQuery, updateValues, (error) => {
+                if (error) {
+                  return res.status(400).json({
+                    status: StatusCodes.BAD_REQUEST,
+                    message: responsemessage.NOTUPDATE,
                   });
+                }
+
+                res.status(200).json({
+                  status: StatusCodes.OK,
+                  message: responsemessage.UPDATE,
                 });
-              }
+              });
             }
           }
-        );
+        });
       }
     });
   } catch (error) {
@@ -303,7 +296,7 @@ exports.SendOTP = async (req, res) => {
   } catch (error) {
     console.error("OTP error:", error);
     return res.status(500).json({
-      status:StatusCodes.INTERNAL_SERVER_ERROR,
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
       message: responsemessage.INTERNAL_SERVER_ERROR,
     });
   }
