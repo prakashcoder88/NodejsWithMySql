@@ -231,10 +231,13 @@ exports.Updateadmin = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       status: StatusCodes.INTERNAL_SERVER_ERROR,
+
+  
       message: responsemessage.INTERNAL_SERVER_ERROR,
     });
   }
 };
+
 
 exports.SendOTP = async (req, res) => {
   try {
